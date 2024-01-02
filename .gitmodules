@@ -1,0 +1,6 @@
+[submodule "lib/rtc-fix"]
+	path = lib/rtc-fix
+	url = git@github.com:Pablo-Jean/Rtc-Fix-F103-Lib.git
+[submodule "lib/lcd"]
+	path = lib/lcd
+	url = git@github.com:Pablo-Jean/lcd-display.git
