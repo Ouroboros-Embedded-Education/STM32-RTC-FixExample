@@ -21,7 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
+#include "aRtc.h"
+#include "lcdDisplay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +46,8 @@
 RTC_HandleTypeDef hrtc;
 
 /* USER CODE BEGIN PV */
-
+lcd_t Lcd;
+uint8_t Start = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -56,7 +60,27 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void _start_Lcd(){
+	Lcd.columns = 16;
+	Lcd.rows = 2;
+	Lcd.interface = LCD_INTERFACE_4BIT;
+	Lcd.font = LCD_FONT_5X8;
+	Lcd.gpios[LCD_RS].GPIO = LCD_RS_GPIO_Port;
+	Lcd.gpios[LCD_RS].pin = LCD_RS_Pin;
+	Lcd.gpios[LCD_E].GPIO = LCD_E_GPIO_Port;
+	Lcd.gpios[LCD_E].pin = LCD_E_Pin;
+	Lcd.gpios[LCD_D4].GPIO = LCD_D4_GPIO_Port;
+	Lcd.gpios[LCD_D4].pin = LCD_D4_Pin;
+	Lcd.gpios[LCD_D5].GPIO = LCD_D5_GPIO_Port;
+	Lcd.gpios[LCD_D5].pin = LCD_D5_Pin;
+	Lcd.gpios[LCD_D6].GPIO = LCD_D6_GPIO_Port;
+	Lcd.gpios[LCD_D6].pin = LCD_D6_Pin;
+	Lcd.gpios[LCD_D7].GPIO = LCD_D7_GPIO_Port;
+	Lcd.gpios[LCD_D7].pin = LCD_D7_Pin;
 
+	lcd_init(&Lcd);
+	lcd_send_string_pos(&Lcd, "RTC Test", 0, 0);
+}
 /* USER CODE END 0 */
 
 /**
@@ -82,20 +106,48 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  HAL_Delay(500);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+  if (Start == 1){
+	  struct tm InitTime;
 
+	  InitTime.tm_hour = 21;
+	  InitTime.tm_min = 00;
+	  InitTime.tm_sec = 00;
+
+	  InitTime.tm_mday = 2;
+	  InitTime.tm_mon = 0;
+	  InitTime.tm_year = (2024-1900);
+	  aRtc_set(&hrtc, InitTime);
+  }
+
+  _start_Lcd();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  struct tm ActualTime;
+	  char Text1[21], Text2[21];
+
+	  aRtc_get(&hrtc, &ActualTime);
+	  sprintf(Text1, "Hora: %02d:%02d:%02d", ActualTime.tm_hour,
+			  	  	  	  	  	  	  	  ActualTime.tm_min,
+										  ActualTime.tm_sec);
+	  sprintf(Text2, "Data: %02d/%02d/%4d", ActualTime.tm_mday,
+			  	  	  	  	  	  	  	  ActualTime.tm_mon+1,
+										  (ActualTime.tm_year+1900));
+//	  lcd_clear_row(&Lcd, 0);
+	  lcd_send_string_pos(&Lcd, Text1, 0, 0);
+//	  lcd_clear_row(&Lcd, 1);
+	  lcd_send_string_pos(&Lcd, Text2, 1, 0);
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -185,6 +237,7 @@ static void MX_RTC_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
@@ -192,6 +245,27 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, LCD_D7_Pin|LCD_D6_Pin|LCD_D5_Pin|LCD_D4_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LCD_E_Pin|LCD_RS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : LCD_D7_Pin LCD_D6_Pin LCD_D5_Pin LCD_D4_Pin */
+  GPIO_InitStruct.Pin = LCD_D7_Pin|LCD_D6_Pin|LCD_D5_Pin|LCD_D4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LCD_E_Pin LCD_RS_Pin */
+  GPIO_InitStruct.Pin = LCD_E_Pin|LCD_RS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
